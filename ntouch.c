@@ -56,10 +56,10 @@ void helptext() {
 /* When -1 or 0 is returned, you should exit(0), otherwise there was an error! */
 int handleparams(int argc, char **argv, int *logrno, int *insertno, char **targetfilename) {
 	/* Default operation parameters */
-	/* -1 indicates there was no -lr */
+	/* 0 means the same as if there was no -lr */
 	*logrno = 0;
 	/* -1 means "push_back" insertion */
-	*insertno = 0;
+	*insertno = -1;
 
 	if(argc > 1) {
 		/* simplest case */
@@ -76,7 +76,7 @@ int handleparams(int argc, char **argv, int *logrno, int *insertno, char **targe
 				return 1;
 			} else {
 				/* ! logrno */
-				sscanf("%d", argv[2], logrno);
+				sscanf(argv[2], "%d", logrno);
 				if(*logrno < 1) {
 					/* ERR */
 					helptext();
@@ -84,7 +84,7 @@ int handleparams(int argc, char **argv, int *logrno, int *insertno, char **targe
 				}
 				if(argc == 5) {
 					/* ! insertno */
-					sscanf("%d", argv[4], insertno);
+					sscanf(argv[4], "%d", insertno);
 				}else{
 					/* ERR */
 					helptext();
@@ -96,7 +96,7 @@ int handleparams(int argc, char **argv, int *logrno, int *insertno, char **targe
 		} else if((argc == 3) && isdigit(argv[2][0])){
 			/* No --lr, but 3 parameters and last is number */
 			/* ! insertno */
-			sscanf("%d", argv[2], insertno);
+			sscanf(argv[2], "%d", insertno);
 			/* ! targetfilename */
 			*targetfilename = argv[1];
 		} else {
@@ -150,16 +150,14 @@ int main(int argc, char **argv) {
 	ret = (outf != NULL);
 
 	/* Tell the user (code) what file to open */
-	if(ret) {
+	if(ret == 0) {
 		printf("%s\n", outfilename);
 	}
 
 	/* Cleanup - so that scripts can use the file for writing */
-	fclose(outf);
+	if(outf != NULL) fclose(outf);
 	/* If ret was -1 this might(?) fail, so the cleanup order counts here! */
-	if(outfilename != NULL) {
-		free(outfilename);
-	}
+	if(outfilename != NULL) free(outfilename);
 
 	/* EXIT - showing there was problem if we got here */
 	return ret;

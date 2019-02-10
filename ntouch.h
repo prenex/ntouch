@@ -55,7 +55,7 @@ char* my_strdup(char *src) {
  *
  * @param path_filename A complete /path/with/basename.ext (relative to '.' if only filename).
  * @param modulus Numbering turns around using this modulus (for log rotation and stuff).
- * @param insertno Numbering starts at this point - when there is files wth bigger numbers they are shifted like a list.
+ * @param insertno Numbering starts at this point - when there is files wth bigger numbers they are shifted like a list. -1 = "push_back".
  * @param ofname_ptr When not NULL, the full filename (might contain path when provided) of the opened file is returned - you must free() this!
  *
  * @returns File handle - or NULL in case of errors.
@@ -84,6 +84,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 	/* TODO: create outfile_pattern */
 	char *outfile_pattern = "test%d.txt";
 
+	/* Calculate file num */
 	filenum = 0;
 	if(insertno == -1) {
 		/* Create numbered output filename: name<filenum>[.ext] */
@@ -103,6 +104,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 		filenum = insertno;
 		/* TODO: handle shifting when using insertno - similar loop like above */
 	}
+	if(modulus > 0) filenum = filenum % modulus;
 
 	/* Create the final filename */
 	snprintf(outfilename, MAX_OFILE_LEN, outfile_pattern, filenum);
@@ -128,7 +130,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
  *
  * @param path_filename A complete /path/with/basename.ext (relative to '.' if only filename).
  * @param modulus Numbering turns around using this modulus (for log rotation and stuff).
- * @param insertno Numbering starts at this point - when there is files wth bigger numbers they are shifted like a list.
+ * @param insertno Numbering starts at this point - when there is files wth bigger numbers they are shifted like a list. -1 = "push_back".
  *
  * @returns File handle - or NULL in case of errors.
  */

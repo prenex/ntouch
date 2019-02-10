@@ -18,6 +18,7 @@
 #include "dirent.h"
 #include "stdlib.h"
 #include "unistd.h"
+#include "libgen.h"
 
 /* **************** */
 /* Config variables */
@@ -25,12 +26,77 @@
 
 #define MAX_OFILE_LEN 1023
 
-/* ********* */
-/* Functions */
-/* ********* */
+/* ***************** */
+/* Private functions */
+/* ***************** */
+
+/** Adds a %d at the proper position: before last dot or at the end. This uses a malloc copy, so you must use free() */
+static char* gen_filename_pattern(const char *fn) {
+	char *filename_pattern;
+	int name_until;
+	int newlen;
+	int strend;
+	int j;
+	/* -1 means there was no extension (*) */
+	int ext_from = -1;
+	int	i = 0;
+
+	/* Find the name-extension boundary */
+	/* i becomes: len */
+	/* name_until becomes: index of '.' or EOS */
+	/* ext_from becomes: index where extension starts or -1 */
+	while(fn[i] != 0) {
+		if((fn[i] == '.') && (fn[i+1] != 0)) {
+			ext_from = i+1;
+			name_until = i;
+		}
+		++i;
+	}
+	strend = i;
+	if(ext_from == -1) {
+		name_until = strend;
+	}
+
+	/* alma.txt or alma */
+	/* Calculate new length for the returned string */
+	if(ext_from < 0) {
+		newlen = name_until + 2 + 1;
+		/*           name   "%d"  0 */
+	} else {
+		newlen = name_until + 2 + 1 + (strend - ext_from) + 1;
+		/*           name   "%d" '.'       ext              0 */
+	}
+
+	/* Allocate memory for the final pattern */
+	filename_pattern = (char*)malloc(newlen * sizeof(char));
+
+	/* Construct pattern */
+	/* Name */
+	for(i = 0; i < name_until; ++i) {
+		filename_pattern[i] = fn[i];
+	}
+
+	/* %d */
+	filename_pattern[i++] = '%';
+	filename_pattern[i++] = 'd';
+
+	/* Extension */
+	if(ext_from != -1) {
+		filename_pattern[i++] = '.';
+		for(j = ext_from; j < strend; ++j) {
+			filename_pattern[i++] = fn[j];
+		}
+	}
+
+	/* Zero-terminate */
+	filename_pattern[i] = 0;
+
+	/* RETURN */
+	return filename_pattern;
+}
 
 /** Real ANSI-C might not have strdup (maybe I am overly paranoid) - might return NULL and you might need to free */
-char* my_strdup(char *src) {
+static char* my_strdup(char *src) {
 	char *ret;
 	int len;
 
@@ -49,6 +115,10 @@ char* my_strdup(char *src) {
 	}
 }
 
+/* **************** */
+/* Public functions */
+/* **************** */
+
 /** 
  * Opens a numbered file according to parameters. Numbering happens before extension if there is any.
  * This variant returns the output file name for the opened file, which you need to free() yourself!
@@ -61,6 +131,11 @@ char* my_strdup(char *src) {
  * @returns File handle - or NULL in case of errors.
  */
 FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int insertno, char **ofname_ptr) {
+	/* We need to separate the path from filename to get directory listing and name generation */
+	char *path, *filename;
+	/* Needed for dirname and basename: as they modify their arguments */
+	char *patc, *basc;
+
 	/* Output file string handling vars */
 	char outfilename[MAX_OFILE_LEN+1];
 	FILE *outf;
@@ -74,15 +149,18 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 	/* Final file number is being generated here */
 	int filenum;
 
+	char *outfile_pattern;
 	/* Used for filling the pointer with the outfile name if needed */
 	char *outfilename_copy;
 
-	/* TODO: extract path properly */
-	char *path = ".";
-	char *filename = path_filename;
+	/* extract path properly */
+	patc = my_strdup(path_filename);
+	basc = my_strdup(path_filename);
+	path = dirname(patc);
+	filename = basename(basc);
 
-	/* TODO: create outfile_pattern */
-	char *outfile_pattern = "test%d.txt";
+	/* Create outfile_pattern */
+	outfile_pattern = gen_filename_pattern(filename);
 
 	/* Calculate file num */
 	filenum = 0;
@@ -121,6 +199,9 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 		/* Fill their pointer to point for the duplicated string */
 		*ofname_ptr = outfilename_copy;
 	}
+
+	/* Cleanup */
+	free(outfile_pattern);
 
 	/* Return opened file handle */
 	return outf;

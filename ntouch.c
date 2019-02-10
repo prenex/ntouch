@@ -63,12 +63,12 @@ int handleparams(int argc, char **argv, int *logrno, int *insertno, char **targe
 
 	if(argc > 1) {
 		/* simplest case */
-		if(strcmp(help_str, argv[1])) {
+		if(strcmp(help_str, argv[1]) == 0) {
 			/* --help */
 			helptext();
 			/* -1 means we will return 0 from the main prog */
 			return -1;
-		} else if(strcmp(lr_str, argv[1])){
+		} else if(strcmp(lr_str, argv[1]) == 0){
 			/* --lr */
 			if((argc <= 3) || !isdigit(argv[2][0])) {
 				/* ERR */
@@ -108,6 +108,9 @@ int handleparams(int argc, char **argv, int *logrno, int *insertno, char **targe
 		helptext();
 		return 1;
 	}
+
+	/* OK */
+	return 0;
 }
 
 int main(int argc, char **argv) {
@@ -129,6 +132,7 @@ int main(int argc, char **argv) {
 
 	/* Handle parameters */
 	ret = handleparams(argc, argv, &logrno, &insertno, &targetfilename);
+	printf("ntouch_at_with_filename(%d %d, ..)\n", logrno, insertno);
 	if(ret != 0) {
 		if(ret == -1) {
 			/* EXIT */

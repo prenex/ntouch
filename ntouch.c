@@ -147,15 +147,17 @@ int main(int argc, char **argv) {
 	/* TODO: Remove debug code here */
 	printf("ntouch_at_with_filename(%s %d %d, ..)\n", targetfilename, logrno, insertno);
 	outf = ntouch_at_with_filename(targetfilename, logrno, insertno, &outfilename);
-	ret = (outf != NULL);
+	ret = (outf != NULL) ? 0 : 2;
 
 	/* Tell the user (code) what file to open */
 	if(ret == 0) {
 		printf("%s\n", outfilename);
 	}
 
-	/* Cleanup - so that scripts can use the file for writing */
-	if(outf != NULL) fclose(outf);
+	/* Cleanup - and write so that scripts can use the file for writing */
+	if(outf != NULL) {
+		fclose(outf);
+	}
 	/* If ret was -1 this might(?) fail, so the cleanup order counts here! */
 	if(outfilename != NULL) free(outfilename);
 

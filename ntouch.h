@@ -29,7 +29,7 @@
 /* Functions */
 /* ********* */
 
-/** Real ANSI-C might not have strdup (maybe I am overly paranoid) - might return NULL, you might need to free */
+/** Real ANSI-C might not have strdup (maybe I am overly paranoid) - might return NULL and you might need to free */
 char* my_strdup(char *src) {
 	char *ret;
 	int len;
@@ -106,11 +106,12 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 	}
 	if(modulus > 0) filenum = filenum % modulus;
 
+	/* TODO: add path to outfile_pattern */
 	/* Create the final filename */
 	snprintf(outfilename, MAX_OFILE_LEN, outfile_pattern, filenum);
 
-	/* TODO: Open file */
-	outf = NULL; /* NULL indicates error */
+	/* Open file */
+	outf = fopen(outfilename, "w+");
 
 	/* Return of the filename if used */
 	if(ofname_ptr != NULL) {

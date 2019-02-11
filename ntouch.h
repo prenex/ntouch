@@ -110,8 +110,6 @@ static int get_shift_untilno(const char *path, const char *filename_pattern, con
 					untilno = next_untilno;
 				}
 			}
-			/* TODO: Remove debug logging */
-			printf("SHIFT: %s\n", namelist[n]->d_name);
 			free(namelist[n]);
 		}
 		free(namelist);
@@ -121,7 +119,6 @@ static int get_shift_untilno(const char *path, const char *filename_pattern, con
 	if(statevar < 2) {
 		return -1;
 	} else {
-		printf("UNTILNO: %d\n", untilno);
 		return untilno;
 	}
 }
@@ -136,10 +133,18 @@ static void shift_files_like(const char *path, const char *filename_pattern, int
 	fn_untilno = get_shift_untilno(path, filename_pattern, filenum);
 
 	/* Do the shifting - this handles the -1 case too */
-	while((fn_untilno > 0) && (fn_untilno > filenum)) {
-		/* TODO: do the mv operation */
+	while((fn_untilno >= 0) && (fn_untilno >= filenum)) {
+		/* Generate src and dst filenames */
+		snprintf(srcfilename, MAX_OFILE_LEN, filename_pattern, fn_untilno);
+		snprintf(dstfilename, MAX_OFILE_LEN, filename_pattern, fn_untilno + 1);
 
-		--fn_untilno; /* Back to front: otherwise we would override files */
+		/* Do the mv operation: rename is usable as we are in the same directory and same fs */
+		rename(srcfilename, dstfilename);
+		/* TODO: Remove debug logging */
+		printf("SHIFT: %s -> %s\n", srcfilename, dstfilename);
+
+		/* Back to front: otherwise we would override files */
+		--fn_untilno;
 	}
 }
 

@@ -131,6 +131,8 @@ static char* my_strdup(char *src) {
  * @returns File handle - or NULL in case of errors.
  */
 FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int insertno, char **ofname_ptr) {
+	/* For string len calculations */
+	int patlen, fnlen;
 	/* We need to separate the path from filename to get directory listing and name generation */
 	char *path, *filename;
 	/* Needed for dirname and basename: as they modify their arguments */
@@ -195,7 +197,14 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 	if(ofname_ptr != NULL) {
 		/* Copy is needed if we want to return the string as stack will go out scope */
 		/* User free() is needed because of this */
-		outfilename_copy = my_strdup((char*)outfilename);
+		/* Allocate*/
+		patlen = strlen(path);
+		fnlen = strlen(outfilename);
+		outfilename_copy = malloc((patlen + 1 + fnlen) * sizeof(char));
+		/* Fill in with data */
+		strcpy(outfilename_copy, path);
+		outfilename_copy[patlen] = '/';
+		strcpy(outfilename_copy+patlen+1, outfilename);
 		/* Fill their pointer to point for the duplicated string */
 		*ofname_ptr = outfilename_copy;
 	}

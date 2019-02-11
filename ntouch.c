@@ -134,7 +134,6 @@ int main(int argc, char **argv) {
 
 	/* Handle parameters */
 	ret = handleparams(argc, argv, &logrno, &insertno, &targetfilename);
-	printf("ntouch_at_with_filename(%d %d, ..)\n", logrno, insertno);
 	if(ret != 0) {
 		if(ret == -1) {
 			/* EXIT */
@@ -146,8 +145,6 @@ int main(int argc, char **argv) {
 	}
 
 	/* Call into ntouch.h depending on parameters */
-	/* TODO: Remove debug code here */
-	printf("ntouch_at_with_filename(%s %d %d, ..)\n", targetfilename, logrno, insertno);
 	outf = ntouch_at_with_filename(targetfilename, logrno, insertno, &outfilename);
 	ret = (outf != NULL) ? 0 : 2;
 

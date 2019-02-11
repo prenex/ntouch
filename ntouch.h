@@ -26,6 +26,7 @@
 /* Config variables */
 /* **************** */
 
+/* #define DEBUG_LOG 1 */
 #define MAX_OFILE_LEN 1023
 
 /* *************************** */
@@ -140,8 +141,9 @@ static void shift_files_like(const char *path, const char *filename_pattern, int
 
 		/* Do the mv operation: rename is usable as we are in the same directory and same fs */
 		rename(srcfilename, dstfilename);
-		/* TODO: Remove debug logging */
-		printf("SHIFT: %s -> %s\n", srcfilename, dstfilename);
+#ifdef DEBUG_LOG
+		fprintf(stderr, "SHIFT: %s -> %s\n", srcfilename, dstfilename);
+#endif /* DEBUG_LOG */
 
 		/* Back to front: otherwise we would override files */
 		--fn_untilno;

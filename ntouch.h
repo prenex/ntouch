@@ -154,7 +154,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 
 	char *outfile_pattern;
 	/* Used for filling the pointer with the outfile name if needed */
-	char *outfilename_copy;
+	char *fullfilename_copy;
 
 	/* extract path properly */
 	patc = my_strdup(path_filename);
@@ -187,28 +187,29 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 	}
 	if(modulus > 0) filenum = filenum % modulus;
 
-	/* TODO: add path to outfile_pattern */
 	/* Create the final filename */
 	snprintf(outfilename, MAX_OFILE_LEN, outfile_pattern, filenum);
 
-	/* Open file */
-	outf = fopen(outfilename, "w+");
+	/* Construct full path once again - now with numbers */
+	/* Copy is needed if we want to return the string as stack will go out scope */
+	/* User free() is needed because of this */
+	/* Allocate*/
+	patlen = strlen(path);
+	fnlen = strlen(outfilename);
+	fullfilename_copy = malloc((patlen + 1 + fnlen + 1) * sizeof(char));
+	/* Fill in with data */
+	strcpy(fullfilename_copy, path);
+	fullfilename_copy[patlen] = '/';
+	strcpy(fullfilename_copy+patlen+1, outfilename);
 
-	/* Return of the filename if used */
+	/* "Return" the filename through the pointer if provided */
 	if(ofname_ptr != NULL) {
-		/* Copy is needed if we want to return the string as stack will go out scope */
-		/* User free() is needed because of this */
-		/* Allocate*/
-		patlen = strlen(path);
-		fnlen = strlen(outfilename);
-		outfilename_copy = malloc((patlen + 1 + fnlen + 1) * sizeof(char));
-		/* Fill in with data */
-		strcpy(outfilename_copy, path);
-		outfilename_copy[patlen] = '/';
-		strcpy(outfilename_copy+patlen+1, outfilename);
 		/* Fill their pointer to point for the duplicated string */
-		*ofname_ptr = outfilename_copy;
+		*ofname_ptr = fullfilename_copy;
 	}
+
+	/* Open file */
+	outf = fopen(fullfilename_copy, "w+");
 
 	/* Cleanup */
 	free(outfile_pattern);

@@ -123,6 +123,8 @@ static char* my_strdup(char *src) {
  * Opens a numbered file according to parameters. Numbering happens before extension if there is any.
  * This variant returns the output file name for the opened file, which you need to free() yourself!
  *
+ * BEWARE: When modulus is not zero and insertno is not -1, SHIFTING WILL NOT HAPPEN!
+ *
  * @param path_filename A complete /path/with/basename.ext (relative to '.' if only filename).
  * @param modulus Numbering turns around using this modulus (for log rotation and stuff).
  * @param insertno Numbering starts at this point - when there is files wth bigger numbers they are shifted like a list. -1 = "push_back".
@@ -183,7 +185,10 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 		}
 	} else {
 		filenum = insertno;
-		/* TODO: handle shifting when using insertno - similar loop like above */
+		/* -1 means there is no logrotation mode, in which case overwriting is more logical! */
+		if(modulus != -1) {
+			/* TODO: handle shifting when using insertno - similar loop like above */
+		}
 	}
 	if(modulus > 0) filenum = filenum % modulus;
 
@@ -222,6 +227,8 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 
 /** 
  * Opens a numbered file according to parameters. Numbering happens before extension if there is any.
+ *
+ * BEWARE: When modulus is not zero and insertno is not -1, SHIFTING WILL NOT HAPPEN!
  *
  * @param path_filename A complete /path/with/basename.ext (relative to '.' if only filename).
  * @param modulus Numbering turns around using this modulus (for log rotation and stuff).

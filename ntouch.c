@@ -39,7 +39,7 @@ void helptext() {
 	printf("ntouch alma.txt        # Creates alma0.txt - if exists creates alma1.txt instead etc.\n");
 	printf("ntouch alma.txt 4      # Inserts alma4.txt as empty - shift earlier as alma5.txt etc.\n");
 	printf("ntouch -lr 3 asdf.log  # Logrotate: asdf0.log .. asdf2.log ... asdf0.log ...\n");
-	printf("ntouch -lr 3 a.log 2   # Logrotate with insert: mix of -lr and the insert num.\n");
+	printf("ntouch -lr 3 a.log 2   # Logrotate continuing at: Same as logotate but overwrites at 2 here.\n");
 	printf("\n");
 	printf("Remarks:\n");
 	printf("--------\n");
@@ -50,6 +50,7 @@ void helptext() {
 	printf("* The order of parameters do count! It cannot be anything just the above ones!\n");
 	printf("* The numbering always happen BEFORE the last dot in the filename (bf extension) \n");
 	printf("  or at the end of the file if there is no 'file extension'!\n");
+	printf("* If you provide an insertno with -lr being on too, you can 'overwrite' an elem of the list!"\n);
 	printf("\n");
 }
 

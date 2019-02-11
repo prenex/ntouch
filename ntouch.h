@@ -13,6 +13,7 @@
 /* Licence: unlicence                     */
 /* ************************************** */
 
+#define _SVID_SOURCE /* Feature set macro for systemv imp of scanddir(..) */
 #include "stdio.h"
 #include "string.h"
 #include "dirent.h"
@@ -29,6 +30,48 @@
 /* ***************** */
 /* Private functions */
 /* ***************** */
+
+/**
+ * Helper function for shift_files_like.
+ *
+ * @returns -1 if no shift-mv is necessary, otherwise the index of the first bigger-than filenum numbered index with no successor!
+ */
+static int get_shift_untilno(const char *path, const char *filename_pattern, int filenum) {
+	struct dirent **namelist;
+	int n;
+
+	/* TODO: better sorting and filtering for real results */
+	n = scandir(path, &namelist, NULL, alphasort);
+	if (n < 0)
+		perror("scandir");
+	else {
+		while (n--) {
+			/* TODO: Remove debug logging */
+			printf("SHIFT: %s\n", namelist[n]->d_name);
+			free(namelist[n]);
+		}
+		free(namelist);
+	}
+
+	/* TODO: Return real value here */
+	return -1;
+}
+
+/** Shift (mv around) numbered files with filenum greater than the parameter */
+static void shift_files_like(const char *path, const char *filename_pattern, int filenum) {
+	int fn_untilno;
+	char srcfilename[MAX_OFILE_LEN+1];
+	char dstfilename[MAX_OFILE_LEN+1];
+
+	/* See if shifting is needed or not */
+	fn_untilno = get_shift_untilno(path, filename_pattern, filenum);
+
+	/* Do the shifting - this handles the -1 case too */
+	while((fn_untilno > 0) && (fn_untilno > filenum)) {
+
+		--fn_untilno; /* Back to front: otherwise we would override files */
+	}
+}
 
 /** Adds a %d at the proper position: before last dot or at the end. This uses a malloc copy, so you must use free() */
 static char* gen_filename_pattern(const char *fn) {
@@ -187,7 +230,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 		filenum = insertno;
 		/* -1 means there is no logrotation mode, in which case overwriting is more logical! */
 		if(modulus != -1) {
-			/* TODO: handle shifting when using insertno - similar loop like above */
+			shift_files_like(path, outfile_pattern, filenum);
 		}
 	}
 	if(modulus > 0) filenum = filenum % modulus;

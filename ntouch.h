@@ -6,6 +6,7 @@
 /* - Just #include "ntouch.h" to use      */
 /* - See ntouch.c for usage examples      */
 /* - Operations are not atomic when async */
+/* - Operations are not thread safe       */
 /*                                        */
 /* By: prenex                             */
 /* See: http://github.com/prenex/ntouch   */
@@ -27,25 +28,88 @@
 
 #define MAX_OFILE_LEN 1023
 
+/* *************************** */
+/* GLOBAL VARS - nonthreadsafe */
+/* *************************** */
+
+/** Used for my_filter and my_sorter */
+static int my_filter_int;       /* nonthreadsafe */
+/** Used for my_filter and my_sorter */
+static const char *my_filter_pattern; /* nonthreadsafe */
+
 /* ***************** */
 /* Private functions */
 /* ***************** */
+
+/** 
+ * Helper function for get_shift_untilno.
+ * Uses global vars in non-threadsafe way.
+ */
+static int my_filter(const struct dirent *entry) {
+	int ret, entrys_num = -1;
+	ret = sscanf(entry->d_name, my_filter_pattern, &entrys_num);
+	/* TODO: Use ret: There are edge-cases where scanf fills entrysnum, but there is parse error */
+	ret = (entrys_num >= my_filter_int);
+	return ret;
+}
+
+/** 
+ * Helper function for get_shift_untilno.
+ * Uses global vars in non-threadsafe way.
+ *
+ * Rem.: This function only works if my_filter was used before sorting.
+ */
+static int my_sort(const struct dirent **a, const struct dirent **b) {
+	int numa, numb;
+	sscanf((*a)->d_name, my_filter_pattern, &numa);
+	sscanf((*b)->d_name, my_filter_pattern, &numb);
+	if(numa == numb) {
+		return 0;
+	} else if(numa < numb) {
+		return 1;
+	} else {
+		return -1;
+	}
+}
 
 /**
  * Helper function for shift_files_like.
  *
  * @returns -1 if no shift-mv is necessary, otherwise the index of the first bigger-than filenum numbered index with no successor!
  */
-static int get_shift_untilno(const char *path, const char *filename_pattern, int filenum) {
+static int get_shift_untilno(const char *path, const char *filename_pattern, const int filenum) {
 	struct dirent **namelist;
-	int n;
+	int n, statevar, untilno, next_untilno;
 
-	/* TODO: better sorting and filtering for real results */
-	n = scandir(path, &namelist, NULL, alphasort);
-	if (n < 0)
+	/* Set up sort and filter function vars */
+	/* These are here to simulte a lambda for scandir below */
+	my_filter_int = filenum;
+	my_filter_pattern = filename_pattern;
+
+	n = scandir(path, &namelist, &my_filter, &my_sort);
+	if (n < 0) {
 		perror("scandir");
-	else {
+	} else {
+		/* Small state engine */
+		statevar = 0; /* 0: Unsure if filenum is used or not */
 		while (n--) {
+			sscanf(namelist[n]->d_name, filename_pattern, &next_untilno);
+			if(statevar == 0) {
+				if(next_untilno != filenum) {
+					statevar = 1; /* 1: The filenum is unused */
+				} else {
+					statevar = 2; /* 2: The filenum is used, untilno is unsure */
+					untilno = next_untilno;
+				}
+			} else if(statevar == 2) {
+				if(next_untilno != untilno + 1) {
+					/* Found a hole or end of numbers */
+					statevar = 3; /* 3: The filenum is used, untilno surely found */
+				} else {
+					/* Still haven't found the hole or end */
+					untilno = next_untilno;
+				}
+			}
 			/* TODO: Remove debug logging */
 			printf("SHIFT: %s\n", namelist[n]->d_name);
 			free(namelist[n]);
@@ -53,8 +117,13 @@ static int get_shift_untilno(const char *path, const char *filename_pattern, int
 		free(namelist);
 	}
 
-	/* TODO: Return real value here */
-	return -1;
+	/* 2+ means that target filename was used and shift is necessary! */
+	if(statevar < 2) {
+		return -1;
+	} else {
+		printf("UNTILNO: %d\n", untilno);
+		return untilno;
+	}
 }
 
 /** Shift (mv around) numbered files with filenum greater than the parameter */
@@ -68,6 +137,7 @@ static void shift_files_like(const char *path, const char *filename_pattern, int
 
 	/* Do the shifting - this handles the -1 case too */
 	while((fn_untilno > 0) && (fn_untilno > filenum)) {
+		/* TODO: do the mv operation */
 
 		--fn_untilno; /* Back to front: otherwise we would override files */
 	}
@@ -176,6 +246,8 @@ static char* my_strdup(char *src) {
  * @returns File handle - or NULL in case of errors.
  */
 FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int insertno, char **ofname_ptr) {
+	/* Generic temporal int */
+	int i;
 	/* For string len calculations */
 	int patlen, fnlen;
 	/* We need to separate the path from filename to get directory listing and name generation */
@@ -219,7 +291,8 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 		if(d) {
 			while((entry = readdir(d)) != NULL) {
 				entrys_num = 0;
-				sscanf(entry->d_name, outfile_pattern, &entrys_num);
+				i = sscanf(entry->d_name, outfile_pattern, &entrys_num);
+				/* TODO: Use i: There are edge-cases where scanf fills entrysnum, but there is parse error */
 				if(entrys_num >= filenum) {
 					filenum = entrys_num + 1;
 				}

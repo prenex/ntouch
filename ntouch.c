@@ -1,6 +1,7 @@
 /* ****************************************/
 /* n-way touch application                */
-/* - also example for ntouch.h            */
+/* - Also example for ntouch.h            */
+/* - Operations are not atomic when async */
 /*                                        */
 /* By: prenex                             */
 /* See: http://github.com/prenex/ntouch   */

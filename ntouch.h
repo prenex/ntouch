@@ -307,7 +307,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 	} else {
 		filenum = insertno;
 		/* -1 means there is no logrotation mode, in which case overwriting is more logical! */
-		if(modulus != -1) {
+		if(modulus == -1) {
 			shift_files_like(path, outfile_pattern, filenum);
 		}
 	}

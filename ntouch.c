@@ -50,7 +50,7 @@ void helptext() {
 	printf("* The order of parameters do count! It cannot be anything just the above ones!\n");
 	printf("* The numbering always happen BEFORE the last dot in the filename (bf extension) \n");
 	printf("  or at the end of the file if there is no 'file extension'!\n");
-	printf("* If you provide an insertno with -lr being on too, you can 'overwrite' an elem of the list!"\n);
+	printf("* If you provide an insertno with -lr being on too, you can 'overwrite' an elem of the list!\n");
 	printf("\n");
 }
 

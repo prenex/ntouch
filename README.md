@@ -14,8 +14,8 @@ TL;DR
 	ntouch                 # Shows help message
 	ntouch alma.txt        # Creates alma0.txt - if exists creates alma1.txt instead etc.
 	ntouch alma.txt 4      # Inserts alma4.txt as empty - shift earlier as alma5.txt etc.
-	ntouch -lr 3 asdf.log  # Logrotate: asdf0.log .. asdf2.log ... asdf0.log ...
-	ntouch -lr 3 a.log 2   # Logrotate continuing at: Same as logotate but overwrites at 2 here.
+	ntouch -lr 3 asdf.log  # NON-USEFUL: asdf0.log .. asdf2.log ... asdf0.log, asdf0.log ...
+	ntouch -lr 3 a.log 2   # Modulo for logrotate: Opens file at <fileno> mod <lrno> for logrotate
 	
 	Remarks:
 	--------

@@ -39,8 +39,8 @@ void helptext() {
 	printf("ntouch                 # Shows help message\n");
 	printf("ntouch alma.txt        # Creates alma0.txt - if exists creates alma1.txt instead etc.\n");
 	printf("ntouch alma.txt 4      # Inserts alma4.txt as empty - shift earlier as alma5.txt etc.\n");
-	printf("ntouch -lr 3 asdf.log  # Logrotate: asdf0.log .. asdf2.log ... asdf0.log ...\n");
-	printf("ntouch -lr 3 a.log 2   # Logrotate continuing at: Same as logotate but overwrites at 2 here.\n");
+	printf("ntouch -lr 3 asdf.log  # NON-USEFUL: asdf0.log .. asdf2.log ... asdf0.log, asdf0.log ...\n");
+	printf("ntouch -lr 3 a.log 2   # Modulo for logrotate: Opens file at <fileno> mod <lrno> for logrotate\n");
 	printf("\n");
 	printf("Remarks:\n");
 	printf("--------\n");

@@ -38,6 +38,120 @@ static int my_filter_int;       /* nonthreadsafe */
 /** Used for my_filter and my_sorter */
 static const char *my_filter_pattern; /* nonthreadsafe */
 
+/* ****************** */
+/* Scanf parse helper */
+/* ****************** */
+
+/* BOOLE */
+#ifndef BOOLE
+#define BOOLE int
+#endif /* BOOLE */
+#ifndef TRUE
+#define TRUE 1
+#endif /* TRUE */
+#ifndef FALSE
+#define FALSE 0
+#endif /* FALSE */
+/* For human readable states */
+#define STATE_SHIFT 1024
+/* States: 
+ * * -1: is the state when '%' is found
+ * * 0: when only char comparisons are needed
+ * * 'u': after %u (waiting for digits)
+ * * 'd': after %d (waiting for digits or minus)
+ * * 'd'+STATE_SHIFT: in %d (waiting for digits)
+ * * 's': after %s (consuming until whitespace)
+ */
+/* TODO: As you see, only %u, %d, %s is implemented as of now! */
+/**
+ * Function to see if a string fully corresponds to scanf patterns.
+ * Scanf can do its job halfway even if the string would not parse fully!
+ */
+BOOLE correspond_to_pattern(const char *str, const char *pattern) {
+	const char *str_ptr, *pat_ptr;
+	char strc, patc;
+	int statevar = 0; /* 0: charcmp */
+
+	str_ptr = str;
+	pat_ptr = pattern;
+	/* Simple state engine here */
+	while((pat_ptr != NULL) && (str_ptr != NULL) && (
+	          (((statevar == 0) || (statevar == -1)) && ((strc = *str_ptr) != 0) && ((patc = *pat_ptr) != 0))
+	       || ((statevar > 0) && (((strc = *str_ptr) != 0) || ((patc = *pat_ptr) != 0)))
+	     )) {
+		if(statevar == 0) {
+			/* 0: CHARCMP */
+			if(patc == '%') {
+				statevar = -1; /* '%' starts*/
+				++pat_ptr;
+			} else {
+				/* charcmp fail? */
+				if(patc != strc) return FALSE;
+				++pat_ptr;
+				++str_ptr;
+			}
+		} else if(statevar == -1) {
+			/* -1: After '%' in pattern */
+			if(patc == '%') {
+				/* %% to escape '%' char in pattern */
+				statevar = 0;
+			} else if(patc == 'u') {
+				statevar = 'u';
+				++pat_ptr;
+			} else if(patc == 'd') {
+				statevar = 'd' + STATE_SHIFT;
+				++pat_ptr;
+			} else if(patc == 's') {
+				statevar = 's';
+				++pat_ptr;
+			}
+		} else {
+			/* Pattern-states */
+			switch(statevar) {
+				case 'u':
+					if(isdigit(strc)) ++str_ptr;
+					else statevar = 0;
+					break;
+				case 'd':
+					if(isdigit(strc) || (strc == '-') || (strc == '+')){
+					   	++str_ptr;
+						statevar = 'd'+STATE_SHIFT;
+					} else statevar = 0;
+					break;
+				case 'd'+STATE_SHIFT:
+					if(isdigit(strc)) ++str_ptr;
+					else statevar = 0;
+					break;
+				case 's':
+					/* TODO: maybe whitespaces are handled nonstandard by me? */
+					if(isspace(strc)) statevar = 0;
+					else ++str_ptr;
+					break;
+			}
+		}
+	}
+
+	/* Handle the "prefix of the other" - kind of cases both ways */
+	if(pat_ptr != NULL) {
+		if(str_ptr == NULL){
+			/* pattern is null, but string is not */
+			return FALSE;
+		} else {
+			/* One is prefix non-empty of other? */
+			if(patc != strc) {
+				printf("patc:%d strc:%d\n", patc, strc);
+				/* Only possible when one is the zero terminator here */
+				return FALSE;
+			}
+		}
+	} else if(str_ptr != NULL) {
+		/* pattern is null, but string is not */
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
 /* ***************** */
 /* Private functions */
 /* ***************** */
@@ -49,7 +163,7 @@ static const char *my_filter_pattern; /* nonthreadsafe */
 static int my_filter(const struct dirent *entry) {
 	int ret, entrys_num = -1;
 	ret = sscanf(entry->d_name, my_filter_pattern, &entrys_num);
-	/* TODO: Use ret: There are edge-cases where scanf fills entrysnum, but there is parse error */
+	if(!correspond_to_pattern(entry->d_name, my_filter_pattern)) return FALSE;
 	ret = (entrys_num >= my_filter_int);
 	return ret;
 }
@@ -196,9 +310,9 @@ static char* gen_filename_pattern(const char *fn) {
 		filename_pattern[i] = fn[i];
 	}
 
-	/* %d */
+	/* %u */
 	filename_pattern[i++] = '%';
-	filename_pattern[i++] = 'd';
+	filename_pattern[i++] = 'u';
 
 	/* Extension */
 	if(ext_from != -1) {
@@ -299,9 +413,11 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 			while((entry = readdir(d)) != NULL) {
 				entrys_num = 0;
 				i = sscanf(entry->d_name, outfile_pattern, &entrys_num);
-				/* TODO: Use i: There are edge-cases where scanf fills entrysnum, but there is parse error */
-				if(entrys_num >= filenum) {
-					filenum = entrys_num + 1;
+				if(correspond_to_pattern(entry->d_name, outfile_pattern)){
+					printf("CORRESPOND: %s as %s\n", entry->d_name, outfile_pattern);
+					if(entrys_num >= filenum) {
+						filenum = entrys_num + 1;
+					}
 				}
 			}
 			closedir(d);

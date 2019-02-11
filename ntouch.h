@@ -106,7 +106,7 @@ static char* my_strdup(char *src) {
 
 	len = strlen(src);
 	if(len) {
-		ret = malloc((size_t)len * sizeof(char));
+		ret = malloc((len+1) * sizeof(char));
 		strcpy(ret, src);
 
 		return ret;
@@ -140,6 +140,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 
 	/* Output file string handling vars */
 	char outfilename[MAX_OFILE_LEN+1];
+	/* Output file handle */
 	FILE *outf;
 
 	/* Current directory listing */
@@ -200,7 +201,7 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 		/* Allocate*/
 		patlen = strlen(path);
 		fnlen = strlen(outfilename);
-		outfilename_copy = malloc((patlen + 1 + fnlen) * sizeof(char));
+		outfilename_copy = malloc((patlen + 1 + fnlen + 1) * sizeof(char));
 		/* Fill in with data */
 		strcpy(outfilename_copy, path);
 		outfilename_copy[patlen] = '/';
@@ -211,6 +212,8 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 
 	/* Cleanup */
 	free(outfile_pattern);
+	free(basc);
+	free(patc);
 
 	/* Return opened file handle */
 	return outf;

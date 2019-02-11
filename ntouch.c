@@ -85,7 +85,7 @@ int handleparams(int argc, char **argv, int *logrno, int *insertno, char **targe
 				if(argc == 5) {
 					/* ! insertno */
 					sscanf(argv[4], "%d", insertno);
-				}else{
+				} else if(argc != 4){
 					/* ERR */
 					helptext();
 					return 1;

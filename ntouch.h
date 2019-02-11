@@ -74,6 +74,7 @@ BOOLE correspond_to_pattern(const char *str, const char *pattern) {
 
 	str_ptr = str;
 	pat_ptr = pattern;
+
 	/* Simple state engine here */
 	while((pat_ptr != NULL) && (str_ptr != NULL) && (
 	          (((statevar == 0) || (statevar == -1)) && ((strc = *str_ptr) != 0) && ((patc = *pat_ptr) != 0))
@@ -106,7 +107,7 @@ BOOLE correspond_to_pattern(const char *str, const char *pattern) {
 				++pat_ptr;
 			}
 		} else {
-			/* Pattern-states */
+			/* Pattern-states - ONLY MOVE THE STR POINTER AND STATE!!! */
 			switch(statevar) {
 				case 'u':
 					if(isdigit(strc)) ++str_ptr;
@@ -138,8 +139,8 @@ BOOLE correspond_to_pattern(const char *str, const char *pattern) {
 			return FALSE;
 		} else {
 			/* One is prefix non-empty of other? */
-			if(patc != strc) {
-				printf("patc:%d strc:%d\n", patc, strc);
+			/* BEWARE: patc and strc are bad here as assignments are in conditions and would fail in edge cases !!! */
+			if(*pat_ptr != *str_ptr) {
 				/* Only possible when one is the zero terminator here */
 				return FALSE;
 			}
@@ -312,7 +313,7 @@ static char* gen_filename_pattern(const char *fn) {
 
 	/* %u */
 	filename_pattern[i++] = '%';
-	filename_pattern[i++] = 'u';
+	filename_pattern[i++] = 'd';
 
 	/* Extension */
 	if(ext_from != -1) {
@@ -414,7 +415,6 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 				entrys_num = 0;
 				i = sscanf(entry->d_name, outfile_pattern, &entrys_num);
 				if(correspond_to_pattern(entry->d_name, outfile_pattern)){
-					printf("CORRESPOND: %s as %s\n", entry->d_name, outfile_pattern);
 					if(entrys_num >= filenum) {
 						filenum = entrys_num + 1;
 					}
@@ -424,8 +424,8 @@ FILE* ntouch_at_with_filename(char *path_filename, unsigned int modulus, int ins
 		}
 	} else {
 		filenum = insertno;
-		/* -1 means there is no logrotation mode, in which case overwriting is more logical! */
-		if(modulus == -1) {
+		/* 0 means there is no logrotation mode, in which case overwriting is more logical! */
+		if(modulus == 0) {
 			shift_files_like(path, outfile_pattern, filenum);
 		}
 	}
